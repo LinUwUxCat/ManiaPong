@@ -15,11 +15,11 @@
 <quad pos="-145 16" z-index="0" size="5 31" bgcolor="FFFF" id="p1"/>
 <quad pos="140 16" z-index="0" size="5 31" bgcolor="FFFF" id="p2"/>
 <quad pos="-3 3" z-index="0" size="5 5" bgcolor="FFFF" id="ball"/>
+<label pos="0 51" z-index="0" size="20 5" text="ManiaPong" scale="6" halign="center" valign="center2" id="pongtitle"/>
 <script>
 <!--
 #Include "TextLib" as TextLib
 #Include "MathLib" as MathLib
-
 
 *** LaunchBall ***
 ***
@@ -35,6 +35,7 @@ p2.RelativePosition_V3.Y = 16.0;
 easyBtn.Hide();
 mediumBtn.Hide();
 hardBtn.Hide();
+pongTitle.Hide();
 infiniteBtn.Hide();
 winningText.Hide();
 if (difficulty == 3){
@@ -78,6 +79,7 @@ p2score.Hide();
 winningText.Show();
 timer.Hide();
 easyBtn.Show();
+pongTitle.Show();
 mediumBtn.Show();
 hardBtn.Show();
 infiniteBtn.Show();
@@ -108,7 +110,7 @@ Real GetMaxBotSpeed(Integer diff){
             return 0.05;
         }
         case 1: {
-            return 0.25;
+            return 0.22;
         }
         case 2: {
             return 0.45;
@@ -187,6 +189,7 @@ main(){
     declare CMlLabel p1score = (Page.GetFirstChild("p1score") as CMlLabel);
     declare CMlLabel p2score = (Page.GetFirstChild("p2score") as CMlLabel);
     declare CMlLabel winningText = (Page.GetFirstChild("winningtext") as CMlLabel);
+    declare CMlLabel pongTitle = (Page.GetFirstChild("pongtitle") as CMlLabel);
     declare CMlLabel timer = (Page.GetFirstChild("timer") as CMlLabel);
 
     //All hidden by default
