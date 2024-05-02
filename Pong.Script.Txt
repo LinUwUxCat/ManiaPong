@@ -1,0 +1,299 @@
+#Include "TextLib" as TextLib
+#Include "MathLib" as MathLib
+
+*** LaunchBall ***
+***
+ball.RelativePosition_V3 = <-3.0,3.0>;
+BallSpeed = GetMaxBallSpeed(difficulty);
+if (LastScore) BallSpeed.X = -BallSpeed.X;
+***
+
+*** StartPlaying ***
+***
+p1.RelativePosition_V3.Y = 16.0;
+p2.RelativePosition_V3.Y = 16.0;
+easyBtn.Hide();
+mediumBtn.Hide();
+hardBtn.Hide();
+infiniteBtn.Hide();
+winningText.Hide();
+if (difficulty == 3){
+    timer.Show();
+} else {
+    p1score.Show();
+    p2score.Show();
+}
+Score1 = 0;
+Score2 = 0;
+Timer1 = 0;
+OldTime = Now;
++++ LaunchBall +++
+isPlaying = True;
+***
+
+*** BounceBall ***
+***
+BallSpeed.Y = -hit / 15.0;
+BallSpeed.Y *= 0.6;
+if (difficulty == 0) BallSpeed.Y = BallSpeed.Y/5;
+else if (difficulty == 1) BallSpeed.Y = BallSpeed.Y/2;
+else BallSpeed.Y = BallSpeed.Y;
+BallSpeed = GetMaxBallSpeedX(difficulty, BallSpeed.Y);
+***
+
+*** EndGame ***
+***
+isPlaying = False;
+if (difficulty == 3){
+    winningText.SetText("You survived "^ Timer1 ^"ms.");
+} else {
+    if (Score1 > Score2){
+        if (difficulty == 0) winningText.SetText("You won in $1e1$n$oeasy$z mode!");
+        if (difficulty == 1) winningText.SetText("You won in $e91$n$omedium$z mode!");
+        if (difficulty == 2) winningText.SetText("You won in $e00$n$ohard$z mode!");
+    } else winningText.SetText("You lost! D:");
+}
+p1score.Hide();
+p2score.Hide();
+winningText.Show();
+timer.Hide();
+easyBtn.Show();
+mediumBtn.Show();
+hardBtn.Show();
+infiniteBtn.Show();
+***
+
+Real GetMaxPlayerSpeed(Integer diff){
+    switch (diff) {
+        case 0: {
+            return 0.2;
+        }
+        case 1: {
+            return 0.5;
+        }
+        case 2: {
+            return 1.0;
+        }
+        case 3: {
+            return 1.0;
+        }
+        default: {return 1.0;}
+    }
+    return 1.0;
+}
+
+Real GetMaxBotSpeed(Integer diff){
+    switch (diff) {
+        case 0: {
+            return 0.05;
+        }
+        case 1: {
+            return 0.25;
+        }
+        case 2: {
+            return 0.45;
+        } //No case 3 because the bot follows the ball
+        default: {return 1.0;}
+    }
+    return 1.0;
+}
+
+Vec2 GetMaxBallSpeedX(Integer diff, Real SpeedY){
+    switch (diff) {
+        case 0: {
+            return <0.2 - MathLib::Abs(SpeedY), SpeedY>;
+        }
+        case 1: {
+            return <0.5 - MathLib::Abs(SpeedY), SpeedY>;
+        }
+        case 2: {
+            return <1.0 - MathLib::Abs(SpeedY), SpeedY>;
+        }
+        case 3: {
+            return <2.0 - MathLib::Abs(SpeedY), SpeedY>; //JAAA
+        }
+        default: {return <1.0,SpeedY>;}
+    }
+    return <1.0,SpeedY>;
+}
+
+Vec2 GetMaxBallSpeed(Integer diff){
+    declare Real SpeedY = 0.0;
+    switch (diff) {
+        case 0: {
+            SpeedY = MathLib::Rand(-0.1,0.1);
+        }
+        case 1: {
+            SpeedY = MathLib::Rand(-0.4,0.4);
+        }
+        case 2: {
+            SpeedY = MathLib::Rand(-0.9,0.9);
+        }
+        case 3: {
+            SpeedY = MathLib::Rand(-0.9,0.9);
+        }
+        default: {return <1.0,1.0>;}
+    }
+    return GetMaxBallSpeedX(diff, SpeedY);
+}
+
+//Check if 2 quads overlap.
+//Quad position is determined by its top left coordinate.
+//This function actually determines if they do not overlap then returns the opposite value.
+Boolean Overlap(CMlQuad q1, CMlQuad q2){
+    declare Vec2 l1 = q1.RelativePosition_V3;
+    declare Vec2 r1 = q1.RelativePosition_V3; r1.X += q1.Size.X; r1.Y -= q1.Size.Y;
+    declare Vec2 l2 = q2.RelativePosition_V3;
+    declare Vec2 r2 = q2.RelativePosition_V3; r2.X += q2.Size.X; r2.Y -= q2.Size.Y;
+    if (l1.X > r2.X || l2.X > r1.X) return False;
+    if (r1.Y > l2.Y || r2.Y > l1.Y) return False;
+    return True;
+}
+
+main(){
+
+    //pads and ball
+    declare CMlQuad p1 = (Page.GetFirstChild("p1") as CMlQuad);
+    declare CMlQuad p2 = (Page.GetFirstChild("p2") as CMlQuad);
+    declare CMlQuad ball = (Page.GetFirstChild("ball") as CMlQuad);
+
+    //Buttons
+    declare CMlLabel easyBtn = (Page.GetFirstChild("easybtn") as CMlLabel);
+    declare CMlLabel mediumBtn = (Page.GetFirstChild("mediumbtn") as CMlLabel);
+    declare CMlLabel hardBtn = (Page.GetFirstChild("hardbtn") as CMlLabel);
+    declare CMlLabel infiniteBtn = (Page.GetFirstChild("infinitebtn") as CMlLabel);
+
+    //Timer and scores
+    declare CMlLabel p1score = (Page.GetFirstChild("p1score") as CMlLabel);
+    declare CMlLabel p2score = (Page.GetFirstChild("p2score") as CMlLabel);
+    declare CMlLabel winningText = (Page.GetFirstChild("winningtext") as CMlLabel);
+    declare CMlLabel timer = (Page.GetFirstChild("timer") as CMlLabel);
+
+    //All hidden by default
+    p1score.Hide();
+    p2score.Hide();
+    winningText.Hide();
+    timer.Hide();
+
+    declare Boolean isPlaying = False; 
+    // 0 - EASY
+    // 1 - MEDIUM
+    // 2 - HARD
+    // 3 - INFINITE (IMPOSSIBLE)
+    declare Integer difficulty = 0; 
+    declare Vec2 BallSpeed;
+    declare Boolean LastScore = True; //True : p1 scored last, False : p2 scored last
+    declare Real hit = 0.0;
+    declare Integer Score1 = 0;
+    declare Integer Score2 = 0;
+    declare Integer Timer1 = 0;
+    declare Integer OldTime = Now;
+
+    while(True){
+        yield;
+        if (isPlaying){
+            //VISUAL UPDATE
+            if (difficulty != 3){
+                p1score.SetText(""^Score1);
+                p2score.SetText(""^Score2);
+            } else {
+                Timer1 += Now - OldTime;
+                OldTime = Now;
+                timer.SetText(""^Timer1);
+            }
+            
+            
+            //P1 MOVEMENT
+            if (IsKeyPressed(128)){ //UP
+                p1.RelativePosition_V3.Y = p1.RelativePosition_V3.Y + GetMaxPlayerSpeed(difficulty);
+            } else if (IsKeyPressed(32)){ //DOWN
+                p1.RelativePosition_V3.Y = p1.RelativePosition_V3.Y - GetMaxPlayerSpeed(difficulty);
+            }
+
+            //BALL MOVEMENT
+            //paddle collision detection
+            if (Overlap(ball, p1) && BallSpeed.X < 0){
+                hit = p1.RelativePosition_V3.Y - 15.0 - ball.RelativePosition_V3.Y;
+                +++ BounceBall +++
+            }
+            if (Overlap(ball, p2) && BallSpeed.X > 0){
+                if (difficulty == 3) {
+                    BallSpeed = GetMaxBallSpeed(difficulty);
+                    BallSpeed.Y *= 1.2;
+                } else {
+                    hit = p2.RelativePosition_V3.Y - 15.0 - ball.RelativePosition_V3.Y;
+                    +++ BounceBall +++
+                }
+                BallSpeed.X = -BallSpeed.X;
+            }
+
+            //top/bottom collision detection
+            if (BallSpeed.Y+ball.RelativePosition_V3.Y > 85){ //Over the top ?
+                ball.RelativePosition_V3.X += BallSpeed.X;
+                ball.RelativePosition_V3.Y = 85.0;
+                BallSpeed.Y = -BallSpeed.Y;
+            } else if (BallSpeed.Y+ball.RelativePosition_V3.Y < -87){ //Under the bottom ?
+                ball.RelativePosition_V3.X += BallSpeed.X;
+                ball.RelativePosition_V3.Y = -87.0;
+                BallSpeed.Y = -BallSpeed.Y;
+            } else { //Within the bounds, proceed as normal
+                ball.RelativePosition_V3 += BallSpeed;
+            }
+
+            //P2 MOVEMENT
+            if (difficulty == 3){ // Infinite mode : just follow the ball
+                p2.RelativePosition_V3.Y = ball.RelativePosition_V3.Y+12.0; // adjustment so it looks better
+            } else {
+                declare Real p2singlemovement = p2.RelativePosition_V3.Y - ball.RelativePosition_V3.Y - 12.0;
+                if (p2singlemovement<GetMaxBotSpeed(difficulty)) p2singlemovement = GetMaxBotSpeed(difficulty);
+                else if (p2singlemovement>GetMaxBotSpeed(difficulty)) p2singlemovement = -GetMaxBotSpeed(difficulty);
+                p2.RelativePosition_V3.Y += p2singlemovement;
+            }
+
+            //CHECK IF SCORED
+            if (ball.RelativePosition_V3.X <= -160){
+                if (difficulty != 3){
+                    Score2 += 1;
+                    LastScore = False;
+                    +++ LaunchBall +++
+                } else {
+                    +++ EndGame +++
+                }
+            } else if (ball.RelativePosition_V3.X >= 160){
+                Score1 += 1;
+                LastScore = True;
+                +++ LaunchBall +++
+            }
+            if (Score1 >= 7 || Score2 >= 7){
+                +++ EndGame +++
+            }
+        }
+        foreach (Event in PendingEvents){
+            if (!isPlaying && Event.Type == CMlScriptEvent::Type::MouseClick) {
+                switch (Event.ControlId) {
+                    case "easybtn": {
+                        difficulty = 0;
+                        +++ StartPlaying +++
+                    }
+                    case "mediumbtn": {
+                        difficulty = 1;
+                        +++ StartPlaying +++
+                    }
+                    case "hardbtn": {
+                        difficulty = 2;
+                        +++ StartPlaying +++ 
+                    }
+                    case "infinitebtn": {
+                        difficulty = 3;
+                        LastScore = False;
+                        +++ StartPlaying +++
+                    }
+                    default: {
+                        difficulty = 0;
+                        +++ StartPlaying +++
+                    }
+                }
+            }
+        }
+    }
+}
